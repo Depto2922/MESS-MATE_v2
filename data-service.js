@@ -5,21 +5,23 @@ class DataService {
   constructor() {
     this.supabase = null;
     this.initialized = false;
-    this.initPromise = this.init();
+    this.init();
   }
 
   async init() {
-    // Wait for supabase to be available
-    while (typeof supabase === 'undefined') {
-      await new Promise(resolve => setTimeout(resolve, 100));
+    // Simple initialization
+    if (typeof supabase !== 'undefined') {
+      this.supabase = supabase;
+      this.initialized = true;
+    } else {
+      // Wait for supabase
+      setTimeout(() => this.init(), 100);
     }
-    this.supabase = supabase;
-    this.initialized = true;
   }
 
   async waitForInit() {
-    if (!this.initialized) {
-      await this.initPromise;
+    while (!this.initialized) {
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
     return this;
   }

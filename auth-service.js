@@ -7,7 +7,24 @@ class AuthService {
     this.currentUser = null;
     this.currentMess = null;
     this.initialized = false;
-    this.initPromise = this.init();
+    
+    // Initialize when supabase is available
+    if (typeof supabase !== 'undefined') {
+      this.initPromise = this.init();
+    } else {
+      this.initPromise = this.waitForSupabase().then(() => this.init());
+    }
+  }
+  
+  async waitForSupabase() {
+    let retries = 0;
+    while (typeof supabase === 'undefined' && retries < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      retries++;
+    }
+    if (typeof supabase === 'undefined') {
+      throw new Error('Supabase failed to load');
+    }
   }
 
   async waitForInit() {
@@ -18,31 +35,31 @@ class AuthService {
   }
 
   async init() {
-    // Wait for supabase to be available
-    while (typeof supabase === 'undefined') {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    this.supabase = supabase;
-    
-    // Get initial session
-    const { data: { session } } = await this.supabase.auth.getSession();
-    if (session) {
-      await this.setCurrentUser(session.user);
-    }
-
-    // Listen for auth changes
-    this.supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+    try {
+      this.supabase = supabase;
+      
+      // Get initial session
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (session) {
         await this.setCurrentUser(session.user);
-      } else if (event === 'SIGNED_OUT') {
-        this.currentUser = null;
-        this.currentMess = null;
-        localStorage.removeItem('currentMess');
       }
-    });
-    
-    this.initialized = true;
+
+      // Listen for auth changes
+      this.supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          await this.setCurrentUser(session.user);
+        } else if (event === 'SIGNED_OUT') {
+          this.currentUser = null;
+          this.currentMess = null;
+          localStorage.removeItem('currentMess');
+        }
+      });
+      
+      this.initialized = true;
+    } catch (error) {
+      console.error('Auth service initialization failed:', error);
+      this.initialized = false;
+    }
   }
 
   async setCurrentUser(user) {
