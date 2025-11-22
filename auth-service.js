@@ -3,13 +3,28 @@
 
 class AuthService {
   constructor() {
-    this.supabase = supabase;
+    this.supabase = null;
     this.currentUser = null;
     this.currentMess = null;
-    this.init();
+    this.initialized = false;
+    this.initPromise = this.init();
+  }
+
+  async waitForInit() {
+    if (!this.initialized) {
+      await this.initPromise;
+    }
+    return this;
   }
 
   async init() {
+    // Wait for supabase to be available
+    while (typeof supabase === 'undefined') {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    this.supabase = supabase;
+    
     // Get initial session
     const { data: { session } } = await this.supabase.auth.getSession();
     if (session) {
@@ -26,6 +41,8 @@ class AuthService {
         localStorage.removeItem('currentMess');
       }
     });
+    
+    this.initialized = true;
   }
 
   async setCurrentUser(user) {
@@ -71,6 +88,7 @@ class AuthService {
   }
 
   async signUp(email, password, name, uniqueId) {
+    await this.waitForInit();
     try {
       // First create the auth user
       const { data, error } = await this.supabase.auth.signUp({
@@ -92,7 +110,8 @@ class AuthService {
           .from('profiles')
           .update({
             name: name,
-            email: email
+            email: email,
+            unique_id: uniqueId
           })
           .eq('id', data.user.id);
       }
@@ -104,6 +123,7 @@ class AuthService {
   }
 
   async signIn(emailOrId, password) {
+    await this.waitForInit();
     try {
       // Try to sign in with email first
       let { data, error } = await this.supabase.auth.signInWithPassword({
@@ -137,6 +157,7 @@ class AuthService {
   }
 
   async signOut() {
+    await this.waitForInit();
     const { error } = await this.supabase.auth.signOut();
     this.currentUser = null;
     this.currentMess = null;
@@ -145,6 +166,7 @@ class AuthService {
   }
 
   async createMess(messName, messPassword) {
+    await this.waitForInit();
     if (!this.currentUser) throw new Error('User not authenticated');
 
     try {
@@ -187,6 +209,7 @@ class AuthService {
   }
 
   async joinMess(messName, messPassword) {
+    await this.waitForInit();
     if (!this.currentUser) throw new Error('User not authenticated');
 
     try {

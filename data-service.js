@@ -3,7 +3,25 @@
 
 class DataService {
   constructor() {
+    this.supabase = null;
+    this.initialized = false;
+    this.initPromise = this.init();
+  }
+
+  async init() {
+    // Wait for supabase to be available
+    while (typeof supabase === 'undefined') {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     this.supabase = supabase;
+    this.initialized = true;
+  }
+
+  async waitForInit() {
+    if (!this.initialized) {
+      await this.initPromise;
+    }
+    return this;
   }
 
   // Helper to get current mess ID
@@ -20,6 +38,7 @@ class DataService {
 
   // Members operations
   async getMembers() {
+    await this.waitForInit();
     const messId = this.getCurrentMessId();
     if (!messId) throw new Error('No mess selected');
 
@@ -45,6 +64,7 @@ class DataService {
   }
 
   async removeMember(memberId) {
+    await this.waitForInit();
     const messId = this.getCurrentMessId();
     if (!messId) throw new Error('No mess selected');
 
@@ -60,6 +80,7 @@ class DataService {
 
   // Expenses operations
   async getExpenses() {
+    await this.waitForInit();
     const messId = this.getCurrentMessId();
     if (!messId) throw new Error('No mess selected');
 
@@ -74,6 +95,7 @@ class DataService {
   }
 
   async addExpense(expenseData) {
+    await this.waitForInit();
     const messId = this.getCurrentMessId();
     const userId = this.getCurrentUserId();
     if (!messId || !userId) throw new Error('Authentication required');
@@ -93,6 +115,7 @@ class DataService {
   }
 
   async updateExpense(id, updates) {
+    await this.waitForInit();
     const { data, error } = await this.supabase
       .from('expenses')
       .update(updates)
@@ -105,6 +128,7 @@ class DataService {
   }
 
   async deleteExpense(id) {
+    await this.waitForInit();
     const { error } = await this.supabase
       .from('expenses')
       .delete()

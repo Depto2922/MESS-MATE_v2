@@ -6,6 +6,7 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT UNIQUE NOT NULL,
+  unique_id TEXT UNIQUE,
   phone TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -369,11 +370,12 @@ CREATE TRIGGER update_debt_requests_updated_at BEFORE UPDATE ON debt_requests
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, email)
+  INSERT INTO public.profiles (id, name, email, unique_id)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', ''),
-    NEW.email
+    NEW.email,
+    NEW.raw_user_meta_data->>'unique_id'
   );
   RETURN NEW;
 END;

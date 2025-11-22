@@ -4,8 +4,9 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Wait for auth service to initialize
   await new Promise(resolve => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       if (typeof auth !== 'undefined') {
+        await auth.waitForInit();
         resolve();
       } else {
         setTimeout(checkAuth, 100);

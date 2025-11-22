@@ -5,6 +5,11 @@
 const SUPABASE_URL = 'https://czfdfdgzsaefuzkallyb.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6ZmRmZGd6c2FlZnV6a2FsbHliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM4MzcxOTEsImV4cCI6MjA3OTQxMzE5MX0.D2mFQKBsMMOjkH1wR7yQYb2UxuFJlSFACRGWAKT_VXU';
 
+// Validate configuration
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('Missing Supabase configuration. Please check your credentials.');
+}
+
 // Initialize Supabase client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
